@@ -136,6 +136,7 @@ public class ChestManager {
                         runnableMap.remove(s);
                     }
                 });
+                this.save();
             }
         }
 
@@ -152,6 +153,7 @@ public class ChestManager {
                     runnable.run();
                 }
             }, removeTime * 20);
+            Bukkit.getScheduler().runTask(DeathChestPlugin.plugin,()-> this.save());
         }
     }
 
