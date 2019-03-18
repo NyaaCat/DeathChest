@@ -177,8 +177,6 @@ public class ChestManager {
         public String loc;
         @Serializable
         public String playerUID;
-        @Serializable
-        public int addedTick;
 
         public ChestInfo() {
         }

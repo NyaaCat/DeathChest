@@ -46,7 +46,7 @@ public class Events implements Listener {
         if (DeathChestPlugin.plugin.config.enabled
                 && e.getDrops() != null
                 && !e.getDrops().isEmpty()
-                && p.getLocation().getY() > 5) {
+                && p.getLocation().getY() > 1) {
             for (int y = 0; y < 255; y++) {
                 Location loc = p.getLocation().clone();
                 if (loc.getY() + y >= loc.getWorld().getMaxHeight()) {
