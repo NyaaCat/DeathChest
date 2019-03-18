@@ -1,0 +1,9 @@
+language: zh-CN
+enabled: true
+dropAmount: 0-16
+removeTime: 600
+openSelfChestOnly: true
+enabledWorld:
+  - world
+  - world_nether
+  - world_the_end

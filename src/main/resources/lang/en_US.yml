@@ -1,0 +1,8 @@
+info:
+
+error:
+  drop_amount_invalid: "掉落数量格式错误"
+user:
+  chest:
+    name: "%s %s"
+    date_format: "yyyyMMdd"
