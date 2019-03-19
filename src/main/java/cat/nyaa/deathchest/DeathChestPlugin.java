@@ -29,4 +29,10 @@ public class DeathChestPlugin extends JavaPlugin {
         getCommand("deathchest").setExecutor(commands);
         manager = new ChestManager();
     }
+
+    public void reload() {
+        config.load();
+        i18n = new I18n(config.language);
+        i18n.load();
+    }
 }

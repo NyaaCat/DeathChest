@@ -1,11 +1,10 @@
 package cat.nyaa.deathchest;
 
-import cat.nyaa.nyaacore.timer.TimerManager;
-import cat.nyaa.nyaacore.utils.InventoryUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,7 +15,10 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import java.util.logging.Level;
 
 public class Events implements Listener {
@@ -30,7 +32,11 @@ public class Events implements Listener {
         try {
             DeathChest chest = ChestManager.getChest(location);
             if (!player.equals(chest.deathPlayer)) {
+                if (ChestManager.isUnlocked(chest.deathPlayer)) {
+                    return;
+                }
                 e.setCancelled(true);
+                player.sendMessage("error.not_owner");
             }
         } catch (Exception ex) {
             String message = I18n.format("error.exception");
@@ -74,7 +80,16 @@ public class Events implements Listener {
     }
 
     private boolean makeDrop(Inventory inv, PlayerDeathEvent e) {
+        if (e.getDrops().isEmpty()) {
+            return true;
+        }
         List<ItemStack> drops = new ArrayList<>(e.getDrops());
+        List<ItemStack> finalDrops = drops;
+        drops.stream().forEach(itemStack -> {
+            if (itemStack.getEnchantments().containsKey(Enchantment.VANISHING_CURSE))
+                finalDrops.remove(itemStack);
+            e.getEntity().getInventory().removeItem(itemStack);
+        });
         Collections.shuffle(drops);
         Random random = new Random();
         DeathChestPlugin plugin = DeathChestPlugin.plugin;
@@ -91,20 +106,19 @@ public class Events implements Listener {
             } else {
                 amount = Integer.parseInt(dropAmount);
             }
-        }catch (Exception ex){
+        } catch (Exception ex) {
             plugin.getLogger().log(Level.SEVERE, I18n.format("error.drop_amount_invalid"), ex);
         }
-        drops = drops.subList(0, Math.min(amount, drops.size()-1));
-        ItemStack[] itemsToRemove = drops.toArray(new ItemStack[0]);
-        HashMap<Integer, ItemStack> items = inv.addItem(itemsToRemove);
+        int dropSize = Math.min(amount, drops.size());
+        dropSize = Math.min(dropSize, 27);
+        List<ItemStack> chestDrop = drops.subList(0, dropSize);
+        List<ItemStack> drop = drops.subList(dropSize, drops.size());
+        ItemStack[] itemsToRemove = chestDrop.toArray(new ItemStack[0]);
+        inv.addItem(itemsToRemove);
         e.getDrops().clear();
-        e.getDrops().addAll(items.values());
+        e.getDrops().addAll(drop);
+        e.setKeepInventory(false);
         e.getEntity().getInventory().removeItem(itemsToRemove);
-        e.setKeepInventory(true);
-        if (e.getDrops().isEmpty()) {
-//            e.setKeepInventory(false);
-            return true;
-        }
-        return false;
+        return true;
     }
 }

@@ -16,9 +16,9 @@ import java.time.Instant;
 import java.time.temporal.IsoFields;
 import java.time.temporal.JulianFields;
 import java.time.temporal.TemporalField;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class ChestManager {
     private static ChestManager instance;
@@ -38,6 +38,7 @@ public class ChestManager {
         instance.removeList.submit(deathChest, () -> {
             instance.removeChest(block.getLocation(), deathChest);
         });
+        instance.persistantChest.lock(player);
 //        TimerData timerData = createTimerData();
 //        instance.timer.registerTimer(plugin, getLoc(block.getLocation()),
 //                timerData,
@@ -78,6 +79,21 @@ public class ChestManager {
         return deathChest != null;
     }
 
+    public static boolean isUnlocked(Player player) {
+        return instance.persistantChest.isUnlocked(player);
+    }
+
+    public static void toggleLock(Player player) {
+        boolean unlocked = instance.persistantChest.isUnlocked(player);
+        if (unlocked){
+            instance.persistantChest.lock(player);
+            player.sendMessage(I18n.format("info.locked"));
+        }else {
+            instance.persistantChest.unlock(player);
+            player.sendMessage(I18n.format("info.unlocked"));
+        }
+    }
+
     public void addChest(Location location, DeathChest deathChest) {
         Bukkit.getScheduler().runTask(DeathChestPlugin.plugin, () -> {
             chestMap.put(location, deathChest);
@@ -86,6 +102,10 @@ public class ChestManager {
             chestInfo.playerUID = deathChest.deathPlayer.getUniqueId().toString();
             persistantChest.chests.put(chestInfo.loc, chestInfo);
             persistantChest.save();
+            String loc = String.format("%s [%d, %d, %d]" , location.getWorld().getName()
+                    , location.getBlockX(), location.getBlockY(), location.getBlockZ());
+            int removetime = DeathChestPlugin.plugin.config.getRemoveTime();
+            deathChest.deathPlayer.sendMessage(I18n.format("info.created", loc, removetime));
         });
     }
 
@@ -100,8 +120,11 @@ public class ChestManager {
                     chestMap.remove(location);
                     persistantChest.chests.remove(getLoc(location));
                     persistantChest.save();
+                    String loc = String.format("%s [%d, %d, %d]" , location.getWorld().getName()
+                            , location.getBlockX(), location.getBlockY(), location.getBlockZ());
+                    deathChest.deathPlayer.sendMessage(I18n.format("info.removed", loc));
+                    instance.persistantChest.removeLock(deathChest.deathPlayer);
                 }
-
             }
         });
     }
@@ -129,13 +152,15 @@ public class ChestManager {
 
         public void removeLoop(){
             if ((!scheduledMap.isEmpty())) {
-                scheduledMap.forEach((s, aLong) -> {
-                    if (System.currentTimeMillis() >= aLong){
+                Set<String> strings = scheduledMap.keySet();
+                for (String s : strings) {
+                    Long aLong = scheduledMap.get(s);
+                    if (System.currentTimeMillis() >= aLong) {
                         scheduledMap.remove(s);
                         runnableMap.get(s).run();
                         runnableMap.remove(s);
                     }
-                });
+                }
                 this.save();
             }
         }
@@ -160,6 +185,8 @@ public class ChestManager {
     public static class PersistantChest extends FileConfigure {
         @Serializable
         Map<String, ChestInfo> chests = new LinkedHashMap<>();
+        @Serializable
+        Map<String, Boolean> unlockedMap = new LinkedHashMap<>();
 
         @Override
         protected String getFileName() {
@@ -170,9 +197,24 @@ public class ChestManager {
         protected JavaPlugin getPlugin() {
             return DeathChestPlugin.plugin;
         }
+
+        public void unlock(Player player){ unlockedMap.put(player.getUniqueId().toString(), true); }
+
+        public boolean isUnlocked(Player player) {
+            Boolean aBoolean = unlockedMap.get(player.getUniqueId().toString());
+            return aBoolean != null && aBoolean;
+        }
+
+        public void lock(Player player) {
+            unlockedMap.put(player.getUniqueId().toString(), false);
+        }
+
+        public void removeLock(Player deathPlayer) {
+            unlockedMap.remove(deathPlayer.getUniqueId().toString());
+        }
     }
 
-    private static class ChestInfo implements ISerializable {
+    public static class ChestInfo implements ISerializable {
         @Serializable
         public String loc;
         @Serializable

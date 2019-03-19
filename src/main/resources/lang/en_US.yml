@@ -1,7 +1,12 @@
 info:
-
+  enabled: "已启用死亡箱"
+  disabled: "已禁用死亡箱"
+  created: "已在 %s 创建死亡箱，请在 %d 秒内取回"
+  removed: "%s 处的死亡箱已被移除"
 error:
   drop_amount_invalid: "掉落数量格式错误"
+  permission: "你没有执行该命令的权限"
+  not_owner: "你不能打开别人的死亡箱"
 user:
   chest:
     name: "%s %s"

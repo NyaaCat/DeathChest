@@ -1,7 +1,14 @@
 info:
-
+  enabled: "&e已启用死亡箱"
+  disabled: "&d已禁用死亡箱"
+  created: "已在 %s 创建死亡箱，请在 %d 秒内取回。请尽快返回取出物品。\n如果需要他人帮助取回物品，请使用 /blah blah 解锁你的死亡箱子"
+  removed: "%s 处的死亡箱已被移除"
+  locked: "死亡箱已上锁，只有自己可以打开"
+  unlocked: "死亡箱已解锁，所有玩家都可以打开"
 error:
   drop_amount_invalid: "掉落数量格式错误"
+  permission: "你没有执行该命令的权限"
+  not_owner: "你不能打开别人的死亡箱"
 user:
   chest:
     name: "%s %s"
