@@ -34,5 +34,6 @@ public class DeathChestPlugin extends JavaPlugin {
         config.load();
         i18n = new I18n(config.language);
         i18n.load();
+        manager.load();
     }
 }

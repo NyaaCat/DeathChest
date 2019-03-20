@@ -4,21 +4,22 @@ import cat.nyaa.nyaacore.configuration.FileConfigure;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Config extends FileConfigure {
     @Serializable
-    String language;
+    String language = "en_US";
     @Serializable
-    boolean enabled;
+    boolean enabled = true;
     @Serializable
-    Object dropAmount;
+    Object dropAmount = 27;
     @Serializable
-    int removeTime;
+    int removeTime = 600;
     @Serializable
-    boolean openSelfChestOnly;
+    boolean openSelfChestOnly = true;
     @Serializable
-    List<String> enabledWorld;
+    List<String> enabledWorld = new ArrayList<>();
 
     @Override
     protected String getFileName() {
