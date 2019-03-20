@@ -2,7 +2,6 @@ package cat.nyaa.deathchest;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
 
 public class DeathChest {

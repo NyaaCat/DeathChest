@@ -1,5 +1,6 @@
 package cat.nyaa.deathchest;
 
+import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.configuration.FileConfigure;
 import cat.nyaa.nyaacore.configuration.ISerializable;
 import cat.nyaa.nyaacore.timer.TimerData;
@@ -12,13 +13,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.time.Duration;
 import java.util.*;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 public class ChestManager {
     private static ChestManager instance;
     PersistantChest persistantChest;
     RemoveList removeList;
-    Messages messages;
     Map<Location, DeathChest> chestMap;
     //    TimerManager timer;
 
@@ -71,23 +70,13 @@ public class ChestManager {
         removeList = new RemoveList();
         removeList.load();
         this.loadFromPersist();
-        messages = new Messages();
-        messages.load();
     }
 
-    public static boolean hasMessage(OfflinePlayer offlinePlayer) {
-        return instance.messages.hasMessage(offlinePlayer);
-    }
-
-    public static List<String> getMessage(OfflinePlayer offlinePlayer) {
-        return instance.messages.getMessages(offlinePlayer);
-    }
 
     public void load() {
         persistantChest.load();
         loadFromPersist();
         removeList.load();
-        messages.load();
     }
 
     private void loadFromPersist() {
@@ -155,12 +144,8 @@ public class ChestManager {
             String loc = String.format("%s [%d, %d, %d]", location.getWorld().getName()
                     , location.getBlockX(), location.getBlockY(), location.getBlockZ());
             int removetime = DeathChestPlugin.plugin.config.getRemoveTime();
-            if (deathChest.deathPlayer.isOnline()) {
-                Player player = deathChest.deathPlayer.getPlayer();
-                player.sendMessage(I18n.format("info.created", loc, removetime));
-            }else {
-                messages.submit(deathChest.deathPlayer, I18n.format("info.created", loc, removetime));
-            }
+            Message message = new Message(I18n.format("info.created", loc, removetime));
+            message.send(deathChest.deathPlayer);
         });
     }
 
@@ -177,12 +162,8 @@ public class ChestManager {
 
                     String loc = String.format("%s [%d, %d, %d]", location.getWorld().getName()
                             , location.getBlockX(), location.getBlockY(), location.getBlockZ());
-                    if (deathChest.deathPlayer.isOnline()){
-                        Player player = deathChest.deathPlayer.getPlayer();
-                        player.sendMessage(I18n.format("info.removed", loc));
-                    }else {
-                        messages.submit(deathChest.deathPlayer, I18n.format("info.removed", loc));
-                    }
+                    Message message = new Message(I18n.format("info.removed", loc));
+                    message.send(deathChest.deathPlayer);
                 }
             }
         });
@@ -317,56 +298,6 @@ public class ChestManager {
         @Override
         public void run() {
             instance.removeChest(block.getLocation(), deathChest);
-        }
-    }
-
-    public static class Message implements ISerializable{
-        @Serializable
-        public String uid;
-        @Serializable
-        public String message;
-
-        public Message(){}
-
-        public Message(String uid, String message) {
-            this.uid = uid;
-            this.message = message;
-        }
-    }
-
-    public static class Messages extends FileConfigure{
-        @Serializable
-        public Map<String,Message> messageList = new LinkedHashMap<>();
-
-        @Override
-        protected String getFileName() {
-            return "messages.yml";
-        }
-
-        @Override
-        protected JavaPlugin getPlugin() {
-            return DeathChestPlugin.plugin;
-        }
-
-        public boolean hasMessage(OfflinePlayer offlinePlayer) {
-            return messageList.values().stream().anyMatch(message -> message.uid.equals(offlinePlayer.getUniqueId().toString()));
-        }
-
-        public List<String> getMessages(OfflinePlayer offlinePlayer) {
-            List<Map.Entry<String, Message>> collect = messageList.entrySet().stream()
-                    .filter(entry -> entry.getValue().uid.equals(offlinePlayer.getUniqueId().toString()))
-                    .collect(Collectors.toList());
-            if (!collect.isEmpty()) {
-                collect.forEach(entry -> messageList.remove(entry.getKey()));
-            }
-            Bukkit.getScheduler().runTask(DeathChestPlugin.plugin, this::save);
-            return collect.stream().map(entry -> entry.getValue().message)
-                    .collect(Collectors.toList());
-        }
-
-        public void submit(OfflinePlayer deathPlayer, String format) {
-            messageList.put(UUID.randomUUID().toString(), new Message(deathPlayer.getUniqueId().toString(), format));
-            Bukkit.getScheduler().runTask(DeathChestPlugin.plugin, this::save);
         }
     }
 }

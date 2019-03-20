@@ -1,9 +1,7 @@
 package cat.nyaa.deathchest;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.enchantments.Enchantment;
@@ -13,8 +11,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -26,18 +22,6 @@ import java.util.Random;
 import java.util.logging.Level;
 
 public class Events implements Listener {
-
-    @EventHandler
-    void onPlayerJoin(PlayerJoinEvent event){
-        Player player = event.getPlayer();
-        OfflinePlayer offlinePlayer = player.getServer().getOfflinePlayer(player.getUniqueId());
-        if (ChestManager.hasMessage(offlinePlayer)){
-            List<String> message = ChestManager.getMessage(offlinePlayer);
-            Bukkit.getScheduler().runTaskLater(DeathChestPlugin.plugin, ()->{
-                message.forEach(player::sendMessage);
-            }, 20);
-        }
-    }
 
     @EventHandler
     void onChestOpen(PlayerInteractEvent e) {
