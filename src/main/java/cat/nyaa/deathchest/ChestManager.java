@@ -210,7 +210,7 @@ public class ChestManager {
                     }
                 }
             }
-            return null;
+            return removeTasks;
         }
 
         public void submit(DeathChest deathChest, Runnable runnable) {
