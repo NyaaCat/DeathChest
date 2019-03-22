@@ -29,7 +29,7 @@ public class ChestManager {
         DeathChestPlugin plugin = DeathChestPlugin.plugin;
         DeathChest deathChest = new DeathChest(block, player);
         instance.addChest(block.getLocation(), deathChest);
-        instance.removeList.submit(deathChest,new RemoveTask(block, deathChest) );
+        instance.removeList.submit(deathChest, new RemoveTask(block, deathChest));
 //        TimerData timerData = createTimerData();
 //        instance.timer.registerTimer(plugin, getLoc(block.getLocation()),
 //                timerData,
@@ -48,7 +48,7 @@ public class ChestManager {
     }
 
     static String getLoc(Location location) {
-        String worldName = location.getWorld() == null? "null":location.getWorld().getName();
+        String worldName = location.getWorld() == null ? "null" : location.getWorld().getName();
         return new StringBuilder()
                 .append(worldName)
                 .append("[")
@@ -93,7 +93,7 @@ public class ChestManager {
                             World world = Bukkit.getServer().getWorld(worldName);
                             if (world == null) throw new Exception();
 
-                            String[] loc = split[1].replace("]","").split(",");
+                            String[] loc = split[1].replace("]", "").split(",");
 
                             double x = Double.parseDouble(loc[0]);
                             double y = Double.parseDouble(loc[1]);
@@ -158,7 +158,7 @@ public class ChestManager {
                     deathChest.chestBlock.setType(Material.AIR);
                     deathChest.removed = true;
                     chestMap.remove(location);
-                    persistantChest.remove(getLoc(location),deathChest);
+                    persistantChest.remove(getLoc(location), deathChest);
 
                     String loc = String.format("%s [%d, %d, %d]", location.getWorld().getName()
                             , location.getBlockX(), location.getBlockY(), location.getBlockZ());
@@ -176,7 +176,11 @@ public class ChestManager {
 
         RemoveList() {
             Bukkit.getScheduler().runTaskTimer(DeathChestPlugin.plugin, () -> {
-                removeLoop();
+                List<String> removeTasks = removeLoop();
+                if (!removeTasks.isEmpty()) {
+                    removeTasks.forEach(s -> scheduledMap.remove(s));
+                }
+                this.save();
             }, 0, 200);
         }
 
@@ -190,22 +194,23 @@ public class ChestManager {
             return DeathChestPlugin.plugin;
         }
 
-        public void removeLoop() {
+        public List<String> removeLoop() {
+            List<String> removeTasks = new ArrayList<>();
             if ((!scheduledMap.isEmpty())) {
                 Set<String> strings = scheduledMap.keySet();
                 for (String s : strings) {
                     Long aLong = scheduledMap.get(s);
                     if (System.currentTimeMillis() >= aLong) {
-                        scheduledMap.remove(s);
+                        removeTasks.add(s);
                         Runnable runnable = runnableMap.get(s);
-                        if (runnable!=null){
+                        if (runnable != null) {
                             runnable.run();
                             runnableMap.remove(s);
                         }
                     }
                 }
-                this.save();
             }
+            return null;
         }
 
         public void submit(DeathChest deathChest, Runnable runnable) {
@@ -241,7 +246,7 @@ public class ChestManager {
             return DeathChestPlugin.plugin;
         }
 
-        void addChest(String loc,DeathChest deathChest){
+        void addChest(String loc, DeathChest deathChest) {
             ChestInfo value = new ChestInfo();
             value.playerUID = deathChest.deathPlayer.getUniqueId().toString();
             value.loc = loc;
@@ -285,12 +290,12 @@ public class ChestManager {
         }
     }
 
-    private static class RemoveTask implements Runnable{
+    private static class RemoveTask implements Runnable {
 
         private final Block block;
         private final DeathChest deathChest;
 
-        RemoveTask(Block block, DeathChest deathChest){
+        RemoveTask(Block block, DeathChest deathChest) {
             this.block = block;
             this.deathChest = deathChest;
         }
