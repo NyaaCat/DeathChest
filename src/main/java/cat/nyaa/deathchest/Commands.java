@@ -32,7 +32,7 @@ public class Commands extends CommandReceiver {
         if (!(sender instanceof Player)) {
             return;
         }
-        if (sender.hasPermission("bc.unlock")) {
+        if (sender.hasPermission("dc.unlock")) {
             Player player = (Player) sender;
             ChestManager.toggleLock(player);
         }else {

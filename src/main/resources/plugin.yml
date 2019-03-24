@@ -6,6 +6,15 @@ api-version: 1.13
 commands:
   deathchest:
     description: Create a chest and take some of the items from a player when they die.
+    aliases: dc
     usage: /<command>
-    permission: deathchest.commands
+    permission: dc.commands
     permission-message: You don't have <permission>
+
+permissions:
+  dc.command:
+    description: Base permission node for commands
+    default: true
+  dc.unlock:
+    description: Permission node for unlocking deathchests
+    default: true
