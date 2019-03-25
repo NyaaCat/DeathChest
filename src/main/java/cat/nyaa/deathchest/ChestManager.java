@@ -103,13 +103,13 @@ public class ChestManager {
                             Block blockAt = world.getBlockAt(location);
                             if (!(blockAt.getState() instanceof Chest)) throw new Exception();
                             OfflinePlayer player = DeathChestPlugin.plugin.getServer().getOfflinePlayer(UUID.fromString(chestInfo.playerUID));
-                            if (player == null) throw new Exception();
                             DeathChest deathChest = new DeathChest(blockAt, player);
                             chestMap.put(location, deathChest);
                             removeList.submit(deathChest, new RemoveTask(blockAt, deathChest));
                         }
                     } catch (Exception e) {
-                        DeathChestPlugin.plugin.getLogger().log(Level.INFO, "failed to load a death chest, skipping", e);
+                        DeathChestPlugin.plugin.getLogger().log(Level.INFO, "failed to load a death chest, skipping");
+                        persistantChest.chests.remove(s);
                     }
                 }));
             }
@@ -126,15 +126,16 @@ public class ChestManager {
         return instance.persistantChest.isUnlocked(player);
     }
 
-    public static void toggleLock(Player player) {
+    public static boolean toggleLock(OfflinePlayer player) {
         boolean unlocked = instance.persistantChest.isUnlocked(player);
         if (unlocked) {
             instance.persistantChest.lock(player);
-            player.sendMessage(I18n.format("info.locked"));
+            new Message(I18n.format("info.locked")).send(player);
         } else {
             instance.persistantChest.unlock(player);
-            player.sendMessage(I18n.format("info.unlocked"));
+            new Message(I18n.format("info.unlocked")).send(player);
         }
+        return !unlocked;
     }
 
     public void addChest(Location location, DeathChest deathChest) {

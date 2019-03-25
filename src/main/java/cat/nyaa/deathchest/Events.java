@@ -1,5 +1,6 @@
 package cat.nyaa.deathchest;
 
+import cat.nyaa.nyaacore.Message;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -33,11 +34,11 @@ public class Events implements Listener {
         try {
             DeathChest chest = ChestManager.getChest(location);
             if (!player.getUniqueId().equals(chest.deathPlayer.getUniqueId())) {
-                if (ChestManager.isUnlocked(chest.deathPlayer)) {
+                if (player.isOp() || ChestManager.isUnlocked(chest.deathPlayer)) {
                     return;
                 }
                 e.setCancelled(true);
-                player.sendMessage("error.not_owner");
+                new Message(I18n.format("error.not_owner")).send(player);
             }
         } catch (Exception ex) {
             String message = I18n.format("error.exception");
