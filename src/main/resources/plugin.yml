@@ -8,7 +8,7 @@ commands:
     description: Create a chest and take some of the items from a player when they die.
     aliases: dc
     usage: /<command>
-    permission: dc.commands
+    permission: dc
     permission-message: You don't have <permission>
 
 permissions:

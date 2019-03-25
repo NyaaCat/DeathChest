@@ -109,7 +109,7 @@ public class ChestManager {
                             removeList.submit(deathChest, new RemoveTask(blockAt, deathChest));
                         }
                     } catch (Exception e) {
-                        DeathChestPlugin.plugin.getLogger().log(Level.INFO, "failed to load a death chest, skipping");
+                        DeathChestPlugin.plugin.getLogger().log(Level.INFO, "failed to load a death chest, skipping", e);
                     }
                 }));
             }
