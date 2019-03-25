@@ -82,6 +82,7 @@ public class ChestManager {
     private void loadFromPersist() {
         if (persistantChest.chests != null) {
             if (!persistantChest.chests.isEmpty()) {
+                List<String> invalidChests = new ArrayList<>();
                 persistantChest.chests.forEach(((s, chestInfo) -> {
                     try {
                         if (s.contains("[") && s.contains("]")) {
@@ -109,9 +110,12 @@ public class ChestManager {
                         }
                     } catch (Exception e) {
                         DeathChestPlugin.plugin.getLogger().log(Level.INFO, "failed to load a death chest, skipping");
-                        persistantChest.chests.remove(s);
+                        invalidChests.add(s);
                     }
                 }));
+                invalidChests.forEach(s -> {
+                    persistantChest.chests.remove(s);
+                });
             }
         }
 
