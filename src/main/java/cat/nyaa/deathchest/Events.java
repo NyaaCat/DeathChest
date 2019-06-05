@@ -1,8 +1,10 @@
 package cat.nyaa.deathchest;
 
 import cat.nyaa.nyaacore.Message;
+import cat.nyaa.nyaacore.utils.InventoryUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.enchantments.Enchantment;
@@ -12,15 +14,20 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Events implements Listener {
 
@@ -69,7 +76,9 @@ public class Events implements Listener {
                     try {
                         SimpleDateFormat format = new SimpleDateFormat(I18n.format("user.chest.date_format"));
                         String date = format.format(System.currentTimeMillis());
-                        chest.setCustomName(I18n.format("user.chest.name", p.getName(), date));
+                        String inventoryName = I18n.format("user.chest.name", p.getName(), date);
+                        chest.setCustomName(inventoryName);
+                        chest.update();
                     } catch (Exception e1) {
                         e1.printStackTrace();
                     }
@@ -81,19 +90,65 @@ public class Events implements Listener {
         }
     }
 
+    @EventHandler
+    public void onPlayerRespawn(PlayerRespawnEvent ev){
+        Player p = ev.getPlayer();
+        Config config = DeathChestPlugin.plugin.config;
+        if (!config.respawnBuff) {
+            return;
+        }
+        List<String> respawnBuffList = config.respawnBuffList;
+        new BukkitRunnable(){
+            @Override
+            public void run() {
+                if (!respawnBuffList.isEmpty()) {
+                    try{
+                        respawnBuffList.forEach(s -> {
+                            String[] split = s.split(":", 3);
+                            if (split.length!=3){
+                                ev.getPlayer().getServer().getLogger().log(Level.WARNING, "Bad Config for respawn buff \""+s+"\"");
+                                return;
+                            }
+                            String effect = split[0];
+                            int amplifier = Integer.parseInt(split[1]);
+                            int duration = Integer.parseInt(split[2]);
+                            PotionEffectType potion = PotionEffectType.getByName(effect.toUpperCase());
+                            if (potion == null){
+                                ev.getPlayer().getServer().getLogger().log(Level.WARNING, "Bad Config for respawn buff \""+s+"\"");
+                                return;
+                            }
+                            PotionEffect potionEffect = new PotionEffect(potion, duration, amplifier);
+                            p.addPotionEffect(potionEffect);
+                        });
+                    }catch (Exception e){
+                        ev.getPlayer().getServer().getLogger().log(Level.WARNING, "Bad Config for respawn buff");
+                    }
+                }
+            }
+        }.runTaskLater(DeathChestPlugin.plugin, 1);
+
+    }
+
+    Random random = new Random();
+
     private boolean makeDrop(Inventory inv, PlayerDeathEvent e) {
         if (e.getDrops().isEmpty()) {
             return true;
         }
+        List<ItemStack> keepItems = this.getKeepItemList(e);
         List<ItemStack> drops = new ArrayList<>(e.getDrops());
-        List<ItemStack> finalDrops = drops;
-        drops.stream().forEach(itemStack -> {
-            if (itemStack.getEnchantments().containsKey(Enchantment.VANISHING_CURSE))
-                finalDrops.remove(itemStack);
-            e.getEntity().getInventory().removeItem(itemStack);
-        });
-        Collections.shuffle(drops);
-        Random random = new Random();
+        AtomicInteger index = new AtomicInteger();
+        List<ItemStack> vanishes = drops.stream()
+                .filter(itemStack -> itemStack.getEnchantments().containsKey(Enchantment.VANISHING_CURSE))
+                .collect(Collectors.toList());
+        drops.removeAll(vanishes);
+        if (!keepItems.isEmpty()) {
+            keepItems.forEach(itemStack -> drops.remove(itemStack));
+        }
+        PlayerInventory inventory = e.getEntity().getInventory();
+        InventoryUtils.withdrawInventoryAtomic(inv, vanishes);
+        List<Integer> indexes = drops.stream().mapToInt(itemStack -> index.getAndIncrement()).boxed().collect(Collectors.toList());
+        Collections.shuffle(indexes);
         DeathChestPlugin plugin = DeathChestPlugin.plugin;
         String dropAmount = plugin.config.getDropAmount().replaceAll(" ", "");
         int amount = 0;
@@ -113,14 +168,61 @@ public class Events implements Listener {
         }
         int dropSize = Math.min(amount, drops.size());
         dropSize = Math.min(dropSize, 27);
-        List<ItemStack> chestDrop = drops.subList(0, dropSize);
-        List<ItemStack> drop = drops.subList(dropSize, drops.size());
-        ItemStack[] itemsToRemove = chestDrop.toArray(new ItemStack[0]);
+        List<Integer> chestDrop = indexes.subList(0, dropSize);
+        ItemStack[] itemsToRemove = new ItemStack[dropSize];
+        for (int i = 0; i < dropSize; i++) {
+            itemsToRemove[i] = drops.get(chestDrop.get(i));
+        }
         inv.addItem(itemsToRemove);
-        e.getDrops().clear();
-        e.getDrops().addAll(drop);
-        e.setKeepInventory(false);
-        e.getEntity().getInventory().removeItem(itemsToRemove);
+        List<ItemStack> chestItems = new ArrayList<>(Arrays.asList(itemsToRemove));
+        drops.removeAll(chestItems);
+        World world = e.getEntity().getWorld();
+        Location location = e.getEntity().getLocation();
+        if (!drops.isEmpty()) {
+            drops.forEach(itemStack -> world.dropItem(location, itemStack));
+        }
+        e.setKeepInventory(true);
+        InventoryUtils.withdrawInventoryAtomic(inventory, chestItems);
+        InventoryUtils.withdrawInventoryAtomic(inventory, drops);
+        moveBeltToBackpack(inventory);
         return true;
+    }
+
+    private void moveBeltToBackpack(PlayerInventory inventory) {
+        ItemStack air = new ItemStack(Material.AIR);
+        move:
+        for (int i = 0; i < 9; i++) {
+            ItemStack item = inventory.getItem(i);
+            if (item!=null){
+                for (int j = 9; j < inventory.getSize(); j++) {
+                    ItemStack targetSlot = inventory.getItem(j);
+                    if (targetSlot == null || targetSlot.getType().equals(Material.AIR)){
+                        inventory.setItem(i, air);
+                        inventory.setItem(j, item);
+                        continue move;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    private List<ItemStack> getKeepItemList(PlayerDeathEvent event) {
+        PlayerInventory inventory = event.getEntity().getInventory();
+        List<ItemStack> armors = Stream.of(inventory.getArmorContents()).collect(Collectors.toList());
+        List<ItemStack> belts = Stream.of(inventory.getContents()).limit(9).collect(Collectors.toList());
+        ItemStack offhand = inventory.getItemInOffHand();
+        List<ItemStack> results = new ArrayList<>(armors.size() + belts.size() + 1);
+        Config config = DeathChestPlugin.plugin.config;
+        if (config.keepArmors) {
+            results.addAll(armors);
+        }
+        if (config.keepBelt){
+            results.addAll(belts);
+        }
+        if (config.keepOffhand){
+            results.add(offhand);
+        }
+        return results;
     }
 }

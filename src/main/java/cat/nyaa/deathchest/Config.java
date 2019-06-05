@@ -5,6 +5,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Config extends FileConfigure {
@@ -20,6 +21,20 @@ public class Config extends FileConfigure {
     boolean openSelfChestOnly = true;
     @Serializable
     List<String> enabledWorld = new ArrayList<>();
+    @Serializable
+    boolean keepArmors = false;
+    @Serializable
+    boolean keepBelt = false;
+    @Serializable
+    boolean keepOffhand = false;
+    @Serializable
+    boolean respawnBuff = true;
+
+    @Serializable
+    List<String> respawnBuffList = new ArrayList<>(Arrays.asList("SPEED:2:1200" ,
+            "resistance:1:1200",
+            "weakness:1:1200"));
+
 
     @Override
     protected String getFileName() {

@@ -16,9 +16,9 @@ import java.util.logging.Level;
 
 public class ChestManager {
     private static ChestManager instance;
-    PersistantChest persistantChest;
-    RemoveList removeList;
-    Map<Location, DeathChest> chestMap;
+    private final PersistantChest persistantChest;
+    private RemoveList removeList;
+    private Map<Location, DeathChest> chestMap;
     //    TimerManager timer;
 
     public static DeathChest getChest(Location location) {
@@ -113,9 +113,11 @@ public class ChestManager {
                         invalidChests.add(s);
                     }
                 }));
-                invalidChests.forEach(s -> {
-                    persistantChest.chests.remove(s);
-                });
+                synchronized (persistantChest) {
+                    for (String s : invalidChests) {
+                        persistantChest.chests.remove(s);
+                    }
+                }
             }
         }
 
