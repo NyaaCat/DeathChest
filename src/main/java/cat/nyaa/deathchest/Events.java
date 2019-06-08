@@ -182,8 +182,14 @@ public class Events implements Listener {
             drops.forEach(itemStack -> world.dropItem(location, itemStack));
         }
         e.setKeepInventory(true);
+        List<ItemStack> itemToRemove = keepItems.stream()
+                .filter(itemStack -> itemStack!=null && itemStack.getEnchantments().containsKey(Enchantment.VANISHING_CURSE))
+                .collect(Collectors.toList());
         InventoryUtils.withdrawInventoryAtomic(inventory, chestItems);
         InventoryUtils.withdrawInventoryAtomic(inventory, drops);
+        if (!itemToRemove.isEmpty()) {
+            itemToRemove.forEach(itemStack -> InventoryUtils.removeItem(e.getEntity(),itemStack, itemStack.getAmount()));
+        }
         moveBeltToBackpack(inventory);
         return true;
     }
