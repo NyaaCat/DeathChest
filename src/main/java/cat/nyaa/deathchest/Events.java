@@ -6,7 +6,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -42,16 +44,28 @@ public class Events implements Listener {
             DeathChest chest = ChestManager.getChest(location);
             if (!player.getUniqueId().equals(chest.deathPlayer.getUniqueId())) {
                 if (player.isOp() || ChestManager.isUnlocked(chest.deathPlayer)) {
+                    openChestForPlayer(e, chest);
                     return;
                 }
                 e.setCancelled(true);
                 new Message(I18n.format("error.not_owner")).send(player);
+            }else {
+                openChestForPlayer(e, chest);
             }
         } catch (Exception ex) {
             String message = I18n.format("error.exception");
             player.sendMessage(message);
             DeathChestPlugin.plugin.getLogger().log(Level.SEVERE, message, ex);
         }
+    }
+
+    private void openChestForPlayer(PlayerInteractEvent e, DeathChest chest) {
+        BlockState blockData = chest.chestBlock.getState();
+        Player player = e.getPlayer();
+        if (blockData instanceof Chest){
+            player.openInventory(((Chest) blockData).getBlockInventory());
+        }
+        e.setCancelled(true);
     }
 
     @EventHandler
