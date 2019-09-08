@@ -145,24 +145,51 @@ public class Events implements Listener {
 
     Random random = new Random();
 
-    private boolean makeDrop(Inventory inv, PlayerDeathEvent e) {
+    private boolean makeDrop(Inventory deathChestInventory, PlayerDeathEvent e) {
         if (e.getDrops().isEmpty()) {
             return true;
         }
         List<ItemStack> keepItems = this.getKeepItemList(e);
         List<ItemStack> drops = new ArrayList<>(e.getDrops());
         AtomicInteger index = new AtomicInteger();
-        List<ItemStack> vanishes = drops.stream()
-                .filter(itemStack -> itemStack.getEnchantments().containsKey(Enchantment.VANISHING_CURSE))
-                .collect(Collectors.toList());
-        drops.removeAll(vanishes);
         if (!keepItems.isEmpty()) {
             keepItems.forEach(itemStack -> drops.remove(itemStack));
         }
         PlayerInventory inventory = e.getEntity().getInventory();
-        InventoryUtils.withdrawInventoryAtomic(inv, vanishes);
         List<Integer> indexes = drops.stream().mapToInt(itemStack -> index.getAndIncrement()).boxed().collect(Collectors.toList());
         Collections.shuffle(indexes);
+        int amount = getDropAmount();
+
+        int dropSize = Math.min(amount, drops.size());
+        dropSize = Math.min(dropSize, 27);
+        List<Integer> chestDrop = indexes.subList(0, dropSize);
+        ItemStack[] itemsToRemove = new ItemStack[dropSize];
+        for (int i = 0; i < dropSize; i++) {
+            itemsToRemove[i] = drops.get(chestDrop.get(i));
+        }
+        deathChestInventory.addItem(itemsToRemove);
+        List<ItemStack> chestItems = new ArrayList<>(Arrays.asList(itemsToRemove));
+        drops.removeAll(chestItems);
+        e.setKeepInventory(true);
+        List<ItemStack> itemToRemove = keepItems.stream()
+                .filter(itemStack -> itemStack!=null && itemStack.getEnchantments().containsKey(Enchantment.VANISHING_CURSE))
+                .collect(Collectors.toList());
+        InventoryUtils.withdrawInventoryAtomic(inventory, chestItems);
+        InventoryUtils.withdrawInventoryAtomic(inventory, drops);
+        List<ItemStack> vanishes = Arrays.stream(inventory.getContents())
+                .filter(itemStack -> itemStack!=null && itemStack.getEnchantments().containsKey(Enchantment.VANISHING_CURSE))
+                .collect(Collectors.toList());
+        InventoryUtils.withdrawInventoryAtomic(deathChestInventory, vanishes);
+        InventoryUtils.withdrawInventoryAtomic(inventory, vanishes);
+        if (!itemToRemove.isEmpty()) {
+            itemToRemove.forEach(itemStack -> InventoryUtils.removeItem(e.getEntity(),itemStack, itemStack.getAmount()));
+        }
+        moveBeltToBackpack(inventory);
+        e.getDrops().clear();
+        return true;
+    }
+
+    private int getDropAmount() {
         DeathChestPlugin plugin = DeathChestPlugin.plugin;
         String dropAmount = plugin.config.getDropAmount().replaceAll(" ", "");
         int amount = 0;
@@ -180,32 +207,7 @@ public class Events implements Listener {
         } catch (Exception ex) {
             plugin.getLogger().log(Level.SEVERE, I18n.format("error.drop_amount_invalid"), ex);
         }
-        int dropSize = Math.min(amount, drops.size());
-        dropSize = Math.min(dropSize, 27);
-        List<Integer> chestDrop = indexes.subList(0, dropSize);
-        ItemStack[] itemsToRemove = new ItemStack[dropSize];
-        for (int i = 0; i < dropSize; i++) {
-            itemsToRemove[i] = drops.get(chestDrop.get(i));
-        }
-        inv.addItem(itemsToRemove);
-        List<ItemStack> chestItems = new ArrayList<>(Arrays.asList(itemsToRemove));
-        drops.removeAll(chestItems);
-        World world = e.getEntity().getWorld();
-        Location location = e.getEntity().getLocation();
-        if (!drops.isEmpty()) {
-            drops.forEach(itemStack -> world.dropItem(location, itemStack));
-        }
-        e.setKeepInventory(true);
-        List<ItemStack> itemToRemove = keepItems.stream()
-                .filter(itemStack -> itemStack!=null && itemStack.getEnchantments().containsKey(Enchantment.VANISHING_CURSE))
-                .collect(Collectors.toList());
-        InventoryUtils.withdrawInventoryAtomic(inventory, chestItems);
-        InventoryUtils.withdrawInventoryAtomic(inventory, drops);
-        if (!itemToRemove.isEmpty()) {
-            itemToRemove.forEach(itemStack -> InventoryUtils.removeItem(e.getEntity(),itemStack, itemStack.getAmount()));
-        }
-        moveBeltToBackpack(inventory);
-        return true;
+        return amount;
     }
 
     private void moveBeltToBackpack(PlayerInventory inventory) {
@@ -214,6 +216,7 @@ public class Events implements Listener {
         for (int i = 0; i < 9; i++) {
             ItemStack item = inventory.getItem(i);
             if (item!=null){
+                if (item.containsEnchantment(Enchantment.VANISHING_CURSE))break;
                 for (int j = 9; j < inventory.getSize(); j++) {
                     ItemStack targetSlot = inventory.getItem(j);
                     if (targetSlot == null || targetSlot.getType().equals(Material.AIR)){

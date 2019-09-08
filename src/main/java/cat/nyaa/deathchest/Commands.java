@@ -1,8 +1,10 @@
 package cat.nyaa.deathchest;
 
-import cat.nyaa.nyaacore.CommandReceiver;
 import cat.nyaa.nyaacore.ILocalizer;
 import cat.nyaa.nyaacore.Message;
+import cat.nyaa.nyaacore.cmdreceiver.Arguments;
+import cat.nyaa.nyaacore.cmdreceiver.CommandReceiver;
+import cat.nyaa.nyaacore.cmdreceiver.SubCommand;
 import cat.nyaa.nyaacore.utils.OfflinePlayerUtils;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
