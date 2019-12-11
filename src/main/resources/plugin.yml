@@ -2,7 +2,7 @@ name: DeathChest
 main: cat.nyaa.deathchest.DeathChestPlugin
 version: 1.0
 depend: [NyaaCore]
-api-version: 1.13
+api-version: 1.15
 commands:
   deathchest:
     description: Create a chest and take some of the items from a player when they die.
