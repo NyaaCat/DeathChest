@@ -1,6 +1,7 @@
 package cat.nyaa.deathchest;
 
 import cat.nyaa.nyaacore.configuration.FileConfigure;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -67,5 +68,9 @@ public class Config extends FileConfigure {
 
     public int getRemoveTime() {
         return removeTime;
+    }
+
+    public boolean enabledInWorld(World world) {
+        return enabledWorld.contains(world.getName());
     }
 }

@@ -19,11 +19,11 @@ public class DeathChestPlugin extends JavaPlugin {
         config.load();
         i18n = new I18n(config.language);
         i18n.load();
-        events = new Events();
     }
 
     @Override
     public void onEnable() {
+        events = new Events();
         getServer().getPluginManager().registerEvents(events, plugin);
         commands = new Commands(this, i18n);
         getCommand("deathchest").setExecutor(commands);

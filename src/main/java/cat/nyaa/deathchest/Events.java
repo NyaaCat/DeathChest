@@ -8,10 +8,11 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -23,6 +24,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.BoundingBox;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -37,6 +39,9 @@ public class Events implements Listener {
     void onChestOpen(PlayerInteractEvent e) {
         if (!e.getAction().equals(Action.RIGHT_CLICK_BLOCK)) return;
         if (!e.getClickedBlock().getBlockData().getMaterial().equals(Material.CHEST)) return;
+        if (!DeathChestPlugin.plugin.config.enabledInWorld(e.getClickedBlock().getWorld())){
+            return;
+        }
         Location location = e.getClickedBlock().getLocation();
         if (!ChestManager.hasChestAt(location)) return;
         Player player = e.getPlayer();
@@ -68,20 +73,20 @@ public class Events implements Listener {
         e.setCancelled(true);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     void onPlayerDeath(PlayerDeathEvent e) {
         Location l = e.getEntity().getLocation();
         Player p = e.getEntity();
+        World world = p.getWorld();
+        if (!DeathChestPlugin.plugin.config.enabledInWorld(world)){
+            return;
+        }
         if (DeathChestPlugin.plugin.config.enabled
                 && e.getDrops() != null
                 && !e.getDrops().isEmpty()
                 && p.getLocation().getY() > 1) {
             for (int y = 0; y < 255; y++) {
-                Location loc = p.getLocation().clone();
-                if (loc.getY() + y >= loc.getWorld().getMaxHeight()) {
-                    break;
-                }
-                loc.setY(loc.getY() + y);
+                Location loc = getChestLoc(p, l);
                 if (loc.getBlock().getType() == Material.AIR) {
                     Block block = loc.getBlock();
                     ChestManager.newChest(block, p);
@@ -104,10 +109,63 @@ public class Events implements Listener {
         }
     }
 
+    private Location getChestLoc(Player p, Location deathLocation) {
+        Location result = null;
+        World world = deathLocation.getWorld();
+        if (world == null)return deathLocation;
+
+        Location clone = deathLocation.clone();
+        if (clone.getBlock().getType().isAir()) {
+            for (int i = 0; i > -255; i--) {
+                if (clone.getBlockY() < - i) {
+                    break;
+                }
+                Location candidate = clone.clone().add(0, i, 0);
+                if (candidate.getBlock().getType().isAir()) {
+                    continue;
+                }
+                clone = checkBoundingBox(p, world, candidate);
+            }
+        }
+        for (int i = 0; i < 255; i++) {
+            if (clone.getBlockY() + i > 255) {
+                break;
+            }
+            Location candidate = clone.clone().add(0, i, 0);
+            if (!candidate.getBlock().getType().isAir()) {
+                continue;
+            }
+            result = checkBoundingBox(p, world, candidate);
+            return result;
+        }
+        return deathLocation;
+    }
+
+    private Location checkBoundingBox(Player p, World world, Location candidate) {
+        Location clone = candidate.clone();
+        BoundingBox[] blockBoundingBox = {getBlockBoundingBox(clone)};
+        while (world.getNearbyEntities(clone, 10, 255, 10).stream().anyMatch(entity -> !(entity instanceof LivingEntity) && entity.getBoundingBox().overlaps(blockBoundingBox[0])) || (!clone.getBlock().getType().isAir() && clone.getY() <= 255)){
+            clone.add(0, 1, 0);
+            blockBoundingBox[0] = getBlockBoundingBox(clone);
+        }
+        return clone;
+    }
+
+    private BoundingBox getBlockBoundingBox(Location clone) {
+        int x = clone.getBlockX();
+        int y = clone.getBlockY();
+        int z = clone.getBlockZ();
+        return new BoundingBox(x, y, z, x+1, y+1, z+1);
+    }
+
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent ev){
         Player p = ev.getPlayer();
         Config config = DeathChestPlugin.plugin.config;
+        World world = p.getWorld();
+        if (!DeathChestPlugin.plugin.config.enabledInWorld(world)){
+            return;
+        }
         if (!config.respawnBuff) {
             return;
         }
