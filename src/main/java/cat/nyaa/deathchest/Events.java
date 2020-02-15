@@ -124,7 +124,8 @@ public class Events implements Listener {
                 if (candidate.getBlock().getType().isAir()) {
                     continue;
                 }
-                clone = checkBoundingBox(p, world, candidate);
+                clone = candidate;
+                break;
             }
         }
         for (int i = 0; i < 255; i++) {
