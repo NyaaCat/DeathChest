@@ -86,8 +86,10 @@ public class Events implements Listener {
                 && !e.getDrops().isEmpty()
                 && p.getLocation().getY() > 1) {
             for (int y = 0; y < 255; y++) {
-                Location loc = getChestLoc(p, l);
-                if (loc.getBlock().getType() == Material.AIR) {
+                Location l1 = l.clone();
+                l1.add(0, y, 0);
+                Location loc = getChestLoc(p, l1);
+                if (loc.getBlock().getType().isAir()) {
                     Block block = loc.getBlock();
                     ChestManager.newChest(block, p);
                     block.setType(Material.CHEST);
