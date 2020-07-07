@@ -6,7 +6,7 @@ group 'NyaaCat'
 version '1.2.1'
 ext.majorVersion = 5
 ext.minorVersion = 1
-ext.minecraftVersion = "1.15"
+ext.minecraftVersion = "1.16.1"
 
 sourceCompatibility = 1.8
 
