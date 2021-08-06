@@ -33,7 +33,7 @@ public class Config extends FileConfigure {
 
     @Serializable
     List<String> respawnBuffList = new ArrayList<>(Arrays.asList("SPEED:2:1200" ,
-            "resistance:1:1200",
+            "damage_resistance:1:1200",
             "weakness:1:1200"));
 
 
