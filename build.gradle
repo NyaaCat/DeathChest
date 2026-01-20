@@ -5,10 +5,10 @@ ext.pluginNameUpper = "DeathChest"
 ext.pluginNameLower = ext.pluginNameUpper.toLowerCase()
 ext.majorVersion = 5
 ext.minorVersion = 1
-ext.minecraftVersion = "1.17"
+ext.minecraftVersion = "1.21.11"
 
-sourceCompatibility = 16
-targetCompatibility = 16
+sourceCompatibility = 21
+targetCompatibility = 21
 
 // Supplied by Jenkins
 ext.buildNumber = System.env.BUILD_NUMBER == null ? "x"                : "$System.env.BUILD_NUMBER"
@@ -22,8 +22,8 @@ version = "$majorVersion.$minorVersion.$buildNumber".toString()
 repositories {
     mavenCentral()
     maven {
-        name 'pigotmc-repo'
-        url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
+        name 'papermc'
+        url 'https://repo.papermc.io/repository/maven-public/'
     }
     maven {
         name 'NyaaCat'
@@ -34,27 +34,14 @@ archivesBaseName = 'DeathChest'
 
 
 dependencies {
-    compileOnly "org.spigotmc:spigot-api:$minecraftVersion-R0.1-SNAPSHOT"
+    compileOnly "io.papermc.paper:paper-api:$minecraftVersion-R0.1-SNAPSHOT"
 
     // other nyaa plugins
-    if (gradle.hasProperty("useLocalDependencies") && gradle.useLocalDependencies) {
-        compileOnly project(":NyaaCore")
-    } else {
-        compileOnly('cat.nyaa:nyaacore:8.0-SNAPSHOT') { transitive = false }
-    }
-
-    // other nyaa plugins
-    if (gradle.hasProperty("useLocalDependencies") && gradle.useLocalDependencies) {
-        compileOnly project(":NyaaCore")
-        compileOnly project(":LanguageUtils")
-    } else {
-        compileOnly('cat.nyaa:nyaacore:8.1-SNAPSHOT') { transitive = false }
-        compileOnly('com.meowj:LangUtils:2.4-SNAPSHOT') { transitive = false }
-    }
+    compileOnly('cat.nyaa:nyaacore:9.10') { transitive = false }
 
     //test
-    testImplementation(platform('org.junit:junit-bom:5.7.2'))
-    testImplementation('org.junit.jupiter:junit-jupiter:5.7.2')
+    testImplementation(platform('org.junit:junit-bom:5.10.3'))
+    testImplementation('org.junit.jupiter:junit-jupiter:5.10.3')
 
 }
 

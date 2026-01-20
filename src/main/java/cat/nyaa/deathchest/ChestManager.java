@@ -3,7 +3,7 @@ package cat.nyaa.deathchest;
 import cat.nyaa.nyaacore.Message;
 import cat.nyaa.nyaacore.configuration.FileConfigure;
 import cat.nyaa.nyaacore.configuration.ISerializable;
-import cat.nyaa.nyaacore.timer.TimerData;
+// import cat.nyaa.nyaacore.timer.TimerData; // Removed - no longer used
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -38,14 +38,8 @@ public class ChestManager {
 //        );
     }
 
-    private static TimerData createTimerData() {
-        DeathChestPlugin plugin = DeathChestPlugin.plugin;
-        TimerData timerData = new TimerData();
-        timerData.autoReset = false;
-        int removeTime = plugin.config.getRemoveTime();
-        timerData.duration = Duration.ofSeconds(removeTime);
-        return timerData;
-    }
+    // Removed - TimerData no longer available in NyaaCore 9.x
+    // private static TimerData createTimerData() { ... }
 
     static String getLoc(Location location) {
         String worldName = location.getWorld() == null ? "null" : location.getWorld().getName();
@@ -136,10 +130,14 @@ public class ChestManager {
         boolean unlocked = instance.persistantChest.isUnlocked(player);
         if (unlocked) {
             instance.persistantChest.lock(player);
-            new Message(I18n.format("info.locked")).send(player);
+            if (player.isOnline() && player.getPlayer() != null) {
+                new Message(I18n.format("info.locked")).send(player.getPlayer());
+            }
         } else {
             instance.persistantChest.unlock(player);
-            new Message(I18n.format("info.unlocked")).send(player);
+            if (player.isOnline() && player.getPlayer() != null) {
+                new Message(I18n.format("info.unlocked")).send(player.getPlayer());
+            }
         }
         return !unlocked;
     }
@@ -152,7 +150,9 @@ public class ChestManager {
                     , location.getBlockX(), location.getBlockY(), location.getBlockZ());
             int removetime = DeathChestPlugin.plugin.config.getRemoveTime();
             Message message = new Message(I18n.format("info.created", loc, removetime));
-            message.send(deathChest.deathPlayer);
+            if (deathChest.deathPlayer.isOnline() && deathChest.deathPlayer.getPlayer() != null) {
+                message.send(deathChest.deathPlayer.getPlayer());
+            }
         });
     }
 
@@ -170,7 +170,9 @@ public class ChestManager {
                     String loc = String.format("%s [%d, %d, %d]", location.getWorld().getName()
                             , location.getBlockX(), location.getBlockY(), location.getBlockZ());
                     Message message = new Message(I18n.format("info.removed", loc));
-                    message.send(deathChest.deathPlayer);
+                    if (deathChest.deathPlayer.isOnline() && deathChest.deathPlayer.getPlayer() != null) {
+                        message.send(deathChest.deathPlayer.getPlayer());
+                    }
                 }
             }
         });
