@@ -7,7 +7,9 @@ import cat.nyaa.nyaacore.configuration.ISerializable;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
+import org.bukkit.block.TileState;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.time.Duration;
@@ -30,6 +32,7 @@ public class ChestManager {
         DeathChest deathChest = new DeathChest(block, player);
         instance.addChest(block.getLocation(), deathChest);
         instance.removeList.submit(deathChest, new RemoveTask(block, deathChest));
+        Bukkit.getScheduler().runTask(plugin, () -> markDeathChest(block));
 //        TimerData timerData = createTimerData();
 //        instance.timer.registerTimer(plugin, getLoc(block.getLocation()),
 //                timerData,
@@ -100,6 +103,7 @@ public class ChestManager {
                             OfflinePlayer player = DeathChestPlugin.plugin.getServer().getOfflinePlayer(UUID.fromString(chestInfo.playerUID));
                             DeathChest deathChest = new DeathChest(blockAt, player);
                             chestMap.put(location, deathChest);
+                            markDeathChest(blockAt);
                             removeList.submit(deathChest, new RemoveTask(blockAt, deathChest));
                         }
                     } catch (Exception e) {
@@ -140,6 +144,15 @@ public class ChestManager {
             }
         }
         return !unlocked;
+    }
+
+    public static void markDeathChest(Block block) {
+        if (!(block.getState() instanceof TileState)) {
+            return;
+        }
+        TileState state = (TileState) block.getState();
+        state.getPersistentDataContainer().set(DeathChestPlugin.DEATH_CHEST_KEY, PersistentDataType.BYTE, (byte) 1);
+        state.update(true, false);
     }
 
     public void addChest(Location location, DeathChest deathChest) {

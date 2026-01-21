@@ -1,9 +1,11 @@
 package cat.nyaa.deathchest;
 
+import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class DeathChestPlugin extends JavaPlugin {
     public static DeathChestPlugin plugin;
+    public static final NamespacedKey DEATH_CHEST_KEY = new NamespacedKey("deathchest", "death_chest");
     Config config;
     Events events;
     Commands commands;
