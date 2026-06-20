@@ -7,8 +7,11 @@ ext.majorVersion = 5
 ext.minorVersion = 1
 ext.minecraftVersion = "1.21.11"
 
-sourceCompatibility = 21
-targetCompatibility = 21
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
 
 // Supplied by Jenkins
 ext.buildNumber = System.env.BUILD_NUMBER == null ? "x"                : "$System.env.BUILD_NUMBER"
@@ -16,8 +19,11 @@ ext.mavenDirectory = System.env.MAVEN_DIR == null ? "$projectDir/repo" : "$Syste
 ext.jdDirectory = System.env.JAVADOCS_DIR == null ? null               : "$System.env.JAVADOCS_DIR"
 
 group = "cat.nyaa"
-archivesBaseName = "${pluginNameUpper}-mc$minecraftVersion"
 version = "$majorVersion.$minorVersion.$buildNumber".toString()
+
+base {
+    archivesName = 'DeathChest'
+}
 
 repositories {
     mavenCentral()
@@ -30,9 +36,6 @@ repositories {
         url 'https://ci.nyaacat.com/maven/'
     }
 }
-archivesBaseName = 'DeathChest'
-
-
 dependencies {
     compileOnly "io.papermc.paper:paper-api:$minecraftVersion-R0.1-SNAPSHOT"
 

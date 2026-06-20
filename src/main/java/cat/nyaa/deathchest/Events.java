@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.enchantments.Enchantment;
@@ -89,7 +90,7 @@ public class Events implements Listener {
                 Location l1 = l.clone();
                 l1.add(0, y, 0);
                 Location loc = getChestLoc(p, l1);
-                if (loc.getBlock().getType().isAir()) {
+                if (isValidChestLocation(loc)) {
                     Block block = loc.getBlock();
                     ChestManager.newChest(block, p);
                     block.setType(Material.CHEST);
@@ -119,7 +120,7 @@ public class Events implements Listener {
         Location clone = deathLocation.clone();
         if (clone.getBlock().getType().isAir()) {
             for (int i = 0; i > -255; i--) {
-                if (clone.getBlockY() < - i) {
+                if (clone.getBlockY() + i < world.getMinHeight()) {
                     break;
                 }
                 Location candidate = clone.clone().add(0, i, 0);
@@ -131,11 +132,11 @@ public class Events implements Listener {
             }
         }
         for (int i = 0; i < 255; i++) {
-            if (clone.getBlockY() + i > 255) {
+            if (clone.getBlockY() + i >= world.getMaxHeight()) {
                 break;
             }
             Location candidate = clone.clone().add(0, i, 0);
-            if (!candidate.getBlock().getType().isAir()) {
+            if (!isValidChestLocation(candidate)) {
                 continue;
             }
             result = checkBoundingBox(p, world, candidate);
@@ -147,11 +148,27 @@ public class Events implements Listener {
     private Location checkBoundingBox(Player p, World world, Location candidate) {
         Location clone = candidate.clone();
         BoundingBox[] blockBoundingBox = {getBlockBoundingBox(clone)};
-        while (world.getNearbyEntities(clone, 10, 255, 10).stream().anyMatch(entity -> !(entity instanceof LivingEntity) && entity.getBoundingBox().overlaps(blockBoundingBox[0])) || (!clone.getBlock().getType().isAir() && clone.getY() <= 255)){
+        while (clone.getBlockY() < world.getMaxHeight()
+                && (!isValidChestLocation(clone) || world.getNearbyEntities(clone, 10, 255, 10).stream().anyMatch(entity -> !(entity instanceof LivingEntity) && entity.getBoundingBox().overlaps(blockBoundingBox[0])))) {
             clone.add(0, 1, 0);
             blockBoundingBox[0] = getBlockBoundingBox(clone);
         }
         return clone;
+    }
+
+    private boolean isValidChestLocation(Location location) {
+        World world = location.getWorld();
+        if (world == null || location.getBlockY() < world.getMinHeight() || location.getBlockY() >= world.getMaxHeight()) {
+            return false;
+        }
+        Block block = location.getBlock();
+        if (!block.getType().isAir()) {
+            return false;
+        }
+        Block support = block.getRelative(BlockFace.DOWN);
+        return !support.getType().isAir()
+                && !support.isPassable()
+                && !support.getCollisionShape().getBoundingBoxes().isEmpty();
     }
 
     private BoundingBox getBlockBoundingBox(Location clone) {
